@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}New Supplier  | Register{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="supplier_name">Supplier Name</label>
+    <input name="supplier_name" id="supplier_name" type="text" value="" required>
+    <label for="supplier_sku">Product Sku *</label>
+    <input name="supplier_sku" id="supplier_sku" type="text" value="" required>
+    <label for="supplier_tin">Supplier's TIN</label>
+    <input name="supplier_tin" id="supplier_tin" type="number" " value= None>
+    <label for="supplier_date">Date</label>
+    <input type="date" name="date" id="date" pattern="\d{4}/\d{2}/\d{2}" placeholder="YYYY-MM-DD">
+    <label for="phone">Address</label>
+    <div class = "address_form" >
+      <div>
+        <label for="address">Street</label>
+        <input name="addressS" id="address" type="text" placeholder="R. Julio de Matos" value= None >
+      </div>
+      <div>
+        <label for="address">Zip Code</label>
+        <input name="addressZ" id="address" type="text" placeholder="XXXX-XXX" value= None >
+      </div>
+      <div>
+        <label for="address">City</label>
+        <input name="addressC" id="address" type="text" placeholder="Vila Real" value= None >
+      </div>
+    </div>
+    <input type="submit" value="Create">
+  </form> 
+  <hr>
+  <form action="{{ url_for('supplier_index') }}">
+    <input class="danger" type="submit" value="Cancel" onclick="return confirm('Are you sure?');">
+  </form>
+{% endblock %}  

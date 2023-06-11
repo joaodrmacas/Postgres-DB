@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block header %}
+  <h1>{% block title %}New Client  | Register{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+  <form method="post">
+    <label for="client_number">Client Number</label>
+    <input name="client_number" id="client_number" type="text" value="" disabled>
+    <label for="name">Name *</label>
+    <input name="name" id="name" type="text"  placeholder="John" value="" required>
+    <label for="email">Email *</label>
+    <input name="email" id="email" type="text" placeholder="john@gmail.com" value="" required>
+    <label for="phone">Phone</label>
+    <input name="phone" id="phone" type="number" placeholder="112" value= None>
+    <label for="Address">Address</label>
+    <div name = "Address" class = "address_form" >
+      <div>
+        <label for="address">Street</label>
+        <input name="addressS" id="address" type="text" placeholder="R. Julio de Matos">
+      </div>
+      <div>
+        <label for="address">Zip Code</label>
+        <input name="addressZ" id="address" type="text" placeholder="XXXX-XXX">
+      </div>
+      <div>
+        <label for="address">City</label>
+        <input name="addressC" id="address" type="text" placeholder="Vila Real">
+      </div>
+    </div>
+    <input type="submit" value="Create">
+  </form> 
+  <hr>
+  <form action="{{ url_for('client_index') }}">
+    <input class="danger" type="submit" value="Cancel" onclick="return confirm('Are you sure?');">
+  </form>
+{% endblock %}  

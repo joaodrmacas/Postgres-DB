@@ -1,0 +1,22 @@
+<!doctype html>
+<title>{% block title %}{% endblock %} - Comercio</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='pagination.css') }}">
+<nav>
+  <h1><a href="/">Empresa Comercio Online</a></h1>
+  <ul>
+    <li><a href="{{ url_for('product_index') }}">Products</a>
+    <li><a href="{{ url_for('supplier_index') }}">Suppliers</a>
+    <li><a href="{{ url_for('client_index') }}">Clients</a>
+    <li><a href="{{ url_for('delivery_index') }}">Deliveries</a>
+    </ul>
+  </nav>
+  <section class="content">
+    <header>
+      {% block header %}{% endblock %}
+    </header>
+    {% for message in get_flashed_messages() %}
+      <div class="flash">{{ message }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </section>
