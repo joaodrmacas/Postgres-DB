@@ -2,19 +2,21 @@
 
 {% block header %}
   <h1>{% block title %}Products{% endblock %}</h1>
+  <a class="action" href="{{ url_for('product_create') }}">Create new Client</a>
 {% endblock %}
 
 {% block content %}
-  {% for client in clients %}
+  {% for product in products %}
     <article class="post">
       <header>
         <div>
-          <h1>{{ client['account_number'] }}</h1>
-          <div class="about">in {{ client['branch_name'] }}</div>
+          <h1>{{ product['name'] }} - {{ product['sku'] }}</h1>
+          <div class="about">in {{ product['description'] }}</div>
         </div>
-        <a class="action" href="{{ url_for('client_update', client_number=client['account_number']) }}">Edit</a>
+        <a class="action" href="{{ url_for('product_update', product_sku=product['sku']) }}">Edit</a>
       </header>
-      <p class="body">€ {{ client['balance'] }}</p>
+      <p class="body">€ {{ product['price'] }}</p>
+      <p class="body">EAN: {{ product['ean'] }}</p>
     </article>
     {% if not loop.last %}
       <hr>
@@ -22,11 +24,11 @@
   {% endfor %}
   <div class="button-container">
     {% if page_number > 1 %}  
-      <a href="/clients/{{page_number-1}}" class="navigation-button">&lt;</a>
+      <a href="/products/{{page_number-1}}" class="navigation-button">&lt;</a>
     {% endif %}
     <p class="navigation-button page-indicator">Page {{page_number}}</p>
-    {% if clients %}  
-      <a href="/clients/{{page_number+1}}" class="navigation-button">&gt;</a>
+    {% if products %}  
+      <a href="/products/{{page_number+1}}" class="navigation-button">&gt;</a>
     {% endif %}
     <!-- Add more navigation buttons as needed -->
   </div>

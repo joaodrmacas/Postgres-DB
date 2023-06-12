@@ -41,6 +41,7 @@ dictConfig(
 
 app = Flask(__name__)
 log = app.logger
+app.secret_key = "secret_key"
 
 
 @app.route("/", methods=("GET",))
@@ -82,7 +83,7 @@ def client_update(client_number=-1):
     """View, or delete, or create an account."""
     
     if client_number == -1:
-        return render_template("client/create_client.html")
+        return redirect(client_index)
     
 
     with pool.connection() as conn:
@@ -103,7 +104,6 @@ def client_update(client_number=-1):
 @app.route("/clients/create_client", methods=("GET","POST"))
 def client_create():
     """Create a new account."""
-    app.secret_key = "secret_key"
 
 
 
@@ -179,7 +179,6 @@ def client_delete(client_number):
 
 
 
-@app.route("/", methods=("GET",))
 @app.route("/products", methods=("GET",))
 @app.route("/products/<int:page_number>", methods=("GET",))
 def product_index(page_number=1):
@@ -194,9 +193,9 @@ def product_index(page_number=1):
         with conn.cursor(row_factory=namedtuple_row) as cur:
             products = cur.execute(
                 """
-                SELECT account_number, branch_name, balance
-                FROM account
-                ORDER BY account_number DESC
+                SELECT SKU, name, description, price, ean
+                FROM product
+                ORDER BY name
                 LIMIT %s OFFSET %s;
                 """,
                 (limit, offset),
@@ -210,7 +209,116 @@ def product_index(page_number=1):
     ):
         return jsonify(products)
 
-    return render_template("product/index.html", clients=products, page_number=page_number)
+    return render_template("product/index.html", products=products, page_number=page_number)
+
+
+@app.route("/product/<string:product_sku>/update",methods =("GET", "POST"))
+def product_update(product_sku):
+    """View, or delete, or edit a product."""
+    
+    if request.method == "GET":
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                product = cur.execute(
+                    """
+                    SELECT SKU, name, description, price, ean
+                    FROM product
+                    WHERE SKU = %(sku)s;
+                    """,
+                    {"sku": product_sku},
+                ).fetchone()
+                log.debug(f"Found {cur.rowcount} rows.")
+    
+    if request.method == "POST":
+        price = request.form["price"]
+        description = request.form["description"]
+
+        error = None
+
+        #data check app side
+
+        if error is not None:
+            flash(error)
+        else:
+            with pool.connection() as conn:
+                with conn.cursor(row_factory=namedtuple_row) as cur:
+                    cur.execute(
+                        """
+                        UPDATE product
+                        SET price = %(price)s,
+                            description = %(description)s
+                        WHERE SKU = %(product_sku)s;
+                        """,
+                        {"product_sku": product_sku, "price": price, "description": description},
+                    )
+                conn.commit()
+            return redirect(url_for("product_index"))
+
+    return render_template("product/update.html", product=product)
+
+
+
+@app.route("/product/create_product", methods=("GET","POST"))
+def product_create():
+    """Create a new product."""
+
+
+    if request.method == "POST":
+        sku = request.form["sku"]
+        name = request.form["name"]
+        description = request.form["description"]
+        price = request.form["price"]
+        ean = request.form["ean"]
+
+        error = None
+
+        if not name:
+            error = "Name is required!"
+        if not price:
+            error = "Price is required!"
+        elif price.isnumeric() == False:
+            error = "Price must be a number!"
+        if not ean:
+            error = "EAN is required!"
+        if not sku:
+            error = "SKU is required!"
+        
+
+        
+
+        if error is not None:
+            flash(error)
+        else:
+            try:
+                with pool.connection() as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO customer (SKU, name, description, price, ean)
+                            VALUES (%(cust_no)s, %(name)s, %(address)s, %(phone)s, %(email)s);
+                            """,
+                            {"SKU": sku, "name": name, "description": description, "price": price, "ean": ean},
+                        )
+                    conn.commit()
+                return redirect(url_for("product_index"))
+            except psycopg.DatabaseError as error:
+                # Catch the specific error raised by PostgreSQL for unique constraint violation
+                if error.pgcode == psycopg.DatabaseError.UNIQUE_VIOLATION:
+                    # Handle the error indicating the email is already used
+                    error = "Email is already used!"
+                else:
+                    # Handle other database errors
+                    error = "An error occurred while creating the client."
+                flash(error)
+
+    return render_template("product/create_product.html")
+
+
+
+@app.route("/product/<string:product_sku>/delete",methods =("POST",))
+def product_delete(product_sku):
+    pass
+
 
 
 
@@ -288,8 +396,7 @@ def supplier_delete(supplier_name=""):
 
 @app.route("/supplier/register", methods=("GET","POST"))
 def supplier_register():
-    """Create a new account."""
-    app.secret_key = "secret_key"
+    """Create a new supplier."""
 
 
 
@@ -381,6 +488,4 @@ def ping():
 
 
 if __name__ == "__main__":
-    app.secret_key = "secret_key"
-    app.config['SESSION_TYPE'] = 'filesystem'
     app.run()
