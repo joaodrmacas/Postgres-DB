@@ -18,6 +18,8 @@ import re
 
 # postgres://{user}:{password}@{hostname}:{port}/{database-name}
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
+#DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://db:db@postgres/db")
+
 
 pool = ConnectionPool(conninfo=DATABASE_URL)
 # the pool starts connecting immediately.
@@ -331,24 +333,36 @@ def product_delete(product_sku):
 
 
 
-@app.route("/supplier", methods=("GET",))
-@app.route("/supplier/<int:page_number>", methods=("GET",))
+@app.route("/supplier", methods=("GET","POST",))
+@app.route("/supplier/<int:page_number>", methods=("GET","POST,"))
 def supplier_index(page_number=1):
-    
+    error  = None
+
+    query = request.args.get('query')
+    error = query
+    if error is not None:
+            flash(error)
     limit = 5  # Set the limit to the desired number of items per page
     offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
-    with pool.connection() as conn:
-        with conn.cursor(row_factory=namedtuple_row) as cur:
-            supliers = cur.execute(
-                """
-                SELECT sku, address, name, tin
-                FROM supplier
-                ORDER BY sku
-                LIMIT %s OFFSET %s;
-                """,
-                (limit, offset),
-            ).fetchall()
-            log.debug(f"Found {cur.rowcount} rows.")
+    if not query:
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                supliers = cur.execute(
+                    """
+                    SELECT sku, address, name, tin,date
+                    FROM supplier
+                    ORDER BY sku
+                    LIMIT %s OFFSET %s;
+                    """,
+                    (limit, offset),
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+    else: 
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                supliers = cur.execute("SELECT sku, address, name, tin,date FROM supplier WHERE name LIKE %s OR tin LIKE %s",  ('%' + query + '%', '%' + query + '%')
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
 
     # API-like response is returned to supliers that request JSON explicitly (e.g., fetch)
     if (
@@ -357,6 +371,7 @@ def supplier_index(page_number=1):
     ):
         return jsonify(supliers)
     return render_template("supply/index.html",supliers=supliers,page_number=page_number)
+
 
 @app.route("/supplier/<supplier_name>/update", methods=("GET",))
 @app.route("/supplier/defau/update", methods=("GET",))
@@ -370,7 +385,7 @@ def supplier_update(supplier_name=""):
         with conn.cursor(row_factory=namedtuple_row) as cur:
             supplier = cur.execute(
                 """
-                SELECT name, address, sku, tin
+                SELECT name, address, sku, tin,date
                 FROM supplier
                 WHERE name = %(supplier_name)s;
                 """,
@@ -415,6 +430,7 @@ def supplier_register():
         addressZ = request.form["addressZ"]
         addressC = request.form["addressC"]
         date = request.form["date"]
+        date = date.replace("-","/")
         error = None
 
         #se estao todos preenchidos ou se faltam preencher alguns ou se estao todos vazios

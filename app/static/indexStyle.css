@@ -1,0 +1,57 @@
+/* Style for the post container */
+.post {
+    margin-bottom: 20px;
+}
+
+/* Style for the header section */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 100px;
+}
+
+/* Style for the action link */
+.action {
+    padding: 5px 10px;
+    background-color: #2bc030;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 3px;
+}
+
+/* Style for the body text */
+.body {
+    margin-top: 5px;
+}
+
+/* Style for the horizontal rule */
+hr {
+    border: none;
+    border-top: 1px solid #e80000;
+    margin: 10px 0;
+}
+
+/* Style for the button container */
+.button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+/* Style for the navigation buttons */
+.navigation-button {
+    display: inline-block;
+    padding: 5px 10px;
+    background-color: #f64e00;
+    color: #fff;
+    text-decoration: none;
+    margin: 0 5px;
+    border-radius: 3px;
+}
+
+/* Style for the page indicator */
+.page-indicator {
+    margin: 0 10px;
+}

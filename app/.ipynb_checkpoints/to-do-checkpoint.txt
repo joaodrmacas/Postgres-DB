@@ -1,0 +1,17 @@
+4. Desenvolvimento de Aplicação
+
+a) Registar e remover produtos e fornecedores;
+b) Alterar preços de produtos e respectivas descrições
+c) Registar e remover clientes
+d) Realizar encomendas
+e) Simular o pagamento de encomendas
+
+
+A solução deve prezar pela segurança, prevenindo ataques por SQL INJECTION. Além disso, a
+atomicidade das operações sobre a base de dados deve estar assegurada com recurso a transações.
+
+Embora não seja fundamental para a avaliação, pode-se utilizar CSS ou outras "frameworks" para
+melhorar o aspecto gráfico.
+
+A aplicação deve estar disponível online, no servidor sigma do IST (na área web de um dos alunos do
+grupo), desde a data de entrega do projeto até à data da discussão.

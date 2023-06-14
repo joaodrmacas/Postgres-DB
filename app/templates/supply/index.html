@@ -1,38 +1,59 @@
 {% extends 'base.html' %}
 
+<head>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
 {% block header %}
-  <h1>{% block title %}Supliers{% endblock %}</h1>
+<p>
+<h1>{% block title %}Supliers{% endblock %}</h1>
+<form action="{{ url_for('supplier_index') }}" method="GET">
+  <input type="text" name="query" placeholder="Enter your search query">
+  <input type="submit" value="Search">
+</form>
+</p>
+<p>
   <a class="action" href="{{ url_for('supplier_register') }}">Create new Supplier</a>
+</p>
+
 {% endblock %}
 
 
 
 {% block content %}
-  {% for suplier in supliers %}
-    <article class="post">
-      <header>
-        <div>
-          <h1>{{suplier['name']}}</h1>
-          <div class="about"> address:"{{ suplier['address'] }}"   TIN:{{ suplier['tin'] }}</div>
-        </div>
-        <a class="action" href="{{url_for('supplier_update',supplier_name = suplier['name'])}}">Edit</a>
+{% for suplier in supliers %}
+<article class="post">
+  <header>
+    <div>
+      <h1>{{suplier['name']}}</h1>
+      <div class="about"> address:"{{ suplier['address'] }}" TIN:{{ suplier['tin'] }}</div>
+    </div>
+    <a class="action" href="{{url_for('supplier_update',supplier_name = suplier['name'])}}">Edit</a>
 
-      </header>
-      <p class="body"> Product => {{ suplier['sku'] }}</p>
-    </article>
-    {% if not loop.last %}
-      <hr>
-    {% endif %}
+  </header>
+  <p class="body"> Product => {{ suplier['sku'] }}</p>
+</article>
+{% if not loop.last %}
+<hr>
+{% endif %}
 
-  {% endfor %}
-  <div class="button-container">
-    {% if page_number > 1 %}  
-      <a href="/suplier/{{page_number-1}}" class="navigation-button">&lt;</a>
-    {% endif %}
-    <p class="navigation-button page-indicator">Page {{page_number}}</p>
-    {% if clients %}  
-      <a href="/suplier/{{page_number+1}}" class="navigation-button">&gt;</a>
-    {% endif %}
-    <!-- Add more navigation buttons as needed -->
-  </div>
+{% endfor %}
+<div class="button-container">
+  {% if page_number > 1 %}
+  <a href="/supplier/{{page_number-1}}" class="navigation-button">&lt;</a>
+  {% endif %}
+  <p class="navigation-button page-indicator">Page {{page_number}}</p>
+  {% if supliers %}
+  <a href="/supplier/{{page_number+1}}" class="navigation-button">&gt;</a>
+  {% endif %}
+  <!-- Add more navigation buttons as needed -->
+</div>
+
+
+<footer>
+  <p>
+    Projeto BD 2022/2023 Grupo: </p>
+</footer>
+<p></p>
 {% endblock %}
