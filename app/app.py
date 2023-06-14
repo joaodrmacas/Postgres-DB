@@ -164,24 +164,43 @@ def client_create():
 @app.route("/accounts/<client_number>/delete", methods=("POST",))
 def client_delete(client_number):
     """Delete the account."""
-
+    num = int(client_number)
     with pool.connection() as conn:
         with conn.cursor(row_factory=namedtuple_row) as cur:
             cur.execute(
                 """
-                SELECT delete_cust(%s);
+                DELETE FROM contains WHERE order_no IN
+                (SELECT order_no FROM orders WHERE  cust_no = %s);
                 """,
-                (int(client_number),)
+                (num,)
+            )
+            cur.execute(
+                """
+                DELETE FROM process pr WHERE order_no IN 
+                (SELECT order_no FROM orders WHERE cust_no = %s);
+                """,
+                (num,)
+            )
+            cur.execute(
+                """
+                DELETE FROM pay p WHERE p.cust_no = %s;
+                """,
+                (num,)
+            )
+            cur.execute(
+                """
+                DELETE FROM orders o WHERE o.cust_no=%s;
+                """,
+                (num,)
+            )
+            cur.execute(
+                """
+                DELETE FROM customer c WHERE c.cust_no=%s;
+                """,
+                (num,)
             )
         conn.commit()
     return redirect(url_for("client_index"))
-
-
-
-
-
-
-
 
 @app.route("/products", methods=("GET",))
 @app.route("/products/<int:page_number>", methods=("GET",))
@@ -326,7 +345,29 @@ def product_create():
 
 @app.route("/product/<string:product_sku>/delete",methods =("POST",))
 def product_delete(product_sku):
-    pass
+    sk = product_sku
+    with pool.connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT order_no FROM contains WHERE sku = %s", (sk,))
+            orders = cur.fetchall()
+
+            cur.execute("DELETE FROM contains WHERE sku = %s", (sk,))
+            for order in orders: 
+                cur.execute("DELETE FROM pay WHERE order_no = %s", (order[0],))
+                cur.execute("DELETE FROM process WHERE order_no = %s", (order[0],))
+                cur.execute("DELETE FROM orders WHERE order_no = %s", (order[0],))
+
+            cur.execute("""
+                DELETE FROM delivery WHERE TIN IN
+                (SELECT TIN FROM supplier WHERE sku = %s)
+                """, (sk,))
+            
+            cur.execute("DELETE FROM supplier WHERE sku = %s", (sk,))
+            cur.execute("DELETE FROM product WHERE sku = %s", (sk,))
+        
+        conn.commit()
+    
+    return redirect(url_for("product_index"))
 
 
 
@@ -397,21 +438,28 @@ def supplier_update(supplier_name=""):
 
 
 
-@app.route("/supplier/<supplier_name>/delete", methods=("POST",))
-def supplier_delete(supplier_name=""):
+@app.route("/supplier/<tin>/delete", methods=("POST",))
+def supplier_delete(tin=""):
     """Delete the account."""
-    if supplier_name == "":
+    
+    if tin == "":
          return render_template("supply/index.html")
     with pool.connection() as conn:
         with conn.cursor(row_factory=namedtuple_row) as cur:
             cur.execute(
                 """
-                DELETE FROM supplier
-                WHERE name = %(supplier_name)s;
+                DELETE FROM delivery WHERE TIN IN
+                (SELECT TIN FROM supplier where tin=%s)
                 """,
-                {"supplier_name": supplier_name},
+                (tin,)
             )
-            
+            cur.execute(
+                """
+                DELETE FROM supplier
+                WHERE TIN = %s;
+                """,
+                (tin,),
+            )
         conn.commit()
     return redirect(url_for("supplier_index"))
 
