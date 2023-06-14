@@ -13,6 +13,8 @@ from flask import url_for
 from psycopg.rows import namedtuple_row
 from psycopg_pool import ConnectionPool
 
+import re
+
 
 # postgres://{user}:{password}@{hostname}:{port}/{database-name}
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
@@ -282,6 +284,8 @@ def product_create():
             error = "EAN is required!"
         if not sku:
             error = "SKU is required!"
+        if not description:
+            description = ""
         
 
         
@@ -294,20 +298,23 @@ def product_create():
                     with conn.cursor(row_factory=namedtuple_row) as cur:
                         cur.execute(
                             """
-                            INSERT INTO customer (SKU, name, description, price, ean)
-                            VALUES (%(cust_no)s, %(name)s, %(address)s, %(phone)s, %(email)s);
+                            INSERT INTO product (SKU, name, description, price, ean)
+                            VALUES (%(SKU)s, %(name)s, %(description)s, %(price)s, %(ean)s);
                             """,
                             {"SKU": sku, "name": name, "description": description, "price": price, "ean": ean},
                         )
                     conn.commit()
                 return redirect(url_for("product_index"))
             except psycopg.DatabaseError as error:
-                # Catch the specific error raised by PostgreSQL for unique constraint violation
-                if error.pgcode == psycopg.DatabaseError.UNIQUE_VIOLATION:
-                    # Handle the error indicating the email is already used
-                    error = "Email is already used!"
+                error_message = str(error)
+                #if re.search(r'duplicate key value violates unique constraint', error_message):
+                if re.search(r'Key \(sku\)=\((.*?)\) already exists', error_message):
+                    sku = re.search(r'Key \(sku\)=\((.*?)\) already exists', error_message).group(1)
+                    error = f"SKU '{sku}' is already used!"
+                elif re.search(r'Key \(ean\)=\((.*?)\) already exists', error_message):
+                    ean = re.search(r'Key \(ean\)=\((.*?)\) already exists', error_message).group(1)
+                    error = f"EAN '{ean}' is already used!"
                 else:
-                    # Handle other database errors
                     error = "An error occurred while creating the client."
                 flash(error)
 
@@ -456,22 +463,145 @@ def supplier_register():
 
 
 
-@app.route("/deliveries", methods=("GET",))
-def delivery_index(page_number=1):
-    return render_template("delivery/index.html", clients=products, page_number=page_number)
+
+@app.route("/orders", methods=("GET",))
+@app.route("/orders/<int:page_number>", methods=("GET",))
+def order_index(page_number=1):
+    
+    limit = 5  # Set the limit to the desired number of items per page
+    offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=namedtuple_row) as cur:
+            orders = cur.execute(
+                """
+                SELECT o.order_no, o.cust_no, o.date, p.order_no AS payment_order_no
+                FROM orders o
+                LEFT JOIN pay p ON o.order_no = p.order_no
+                ORDER BY o.order_no
+                LIMIT %s OFFSET %s;
+                """,
+                (limit, offset),
+            ).fetchall()
+            log.debug(f"Found {cur.rowcount} rows.")
+
+    # Create a list to store the orders with payment status (paid/not paid)
+    modified_orders = []
+    
+    for order in orders:
+        if order.payment_order_no is not None:
+            # Order has a corresponding payment record, indicating it has been paid
+            modified_order = dict(order._asdict())
+            modified_order['is_paid'] = True
+        else:
+            # Order does not have a corresponding payment record, indicating it has not been paid
+            modified_order = dict(order._asdict())
+            modified_order['is_paid'] = False
+        
+        modified_orders.append(modified_order)
+
+    # API-like response is returned to orders that request JSON explicitly (e.g., fetch)
+    if (
+        request.accept_mimetypes["application/json"]
+        and not request.accept_mimetypes["text/html"]
+    ):
+        return jsonify(modified_orders)
+    
+    return render_template("order/index.html", orders=modified_orders, page_number=page_number)
+
+
+@app.route("/orders/<order_no>/pay", methods=("GET","POST"))
+def order_pay(order_no):
+    """Pay for an order."""
+    if request.method == "POST":
+        cust_no = request.form["cust_no"]
+        error = None
+        if not cust_no:
+            error = "Customer number is required!"
+        if not order_no:
+            error = "Order number is required!"
+        
+        if error is not None:
+            flash(error)
+        else:
+            try:
+                with pool.connection() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO pay (order_no, cust_no)
+                            VALUES (%(order_no)s, %(cust_no)s);
+                            """,
+                            {"cust_no": cust_no, "order_no": order_no},
+                        )
+                    conn.commit()
+            except psycopg.errors.DatabaseError as error:
+                #flash(str(error))
+                error_message = str(error)
+                if re.search(r'Key \(cust_no\)=\(\d+\) is not present in table "customer"', error_message):
+                    error = "Customer does not exist!"
+                    flash(error)
+                    return render_template("order/pay.html", order_no=order_no)
+                if re.search(r'Key \(order_no\)=\(\d+\) already exists', error_message):
+                    error = "Order has already been paid!"
+                    flash(error)
+                    error = ""
+                # Handle other database errors
+                if error:
+                    error = "An error occurred while creating the order."
+                    flash(error)
+            return redirect(url_for("order_index"))
+
+    return render_template("order/pay.html", order_no=order_no)
 
 
 
+@app.route("/order/create_order", methods=("GET","POST"))
+def order_create():
+    """Create a new order."""
 
 
+    if request.method == "POST":
+        cust_no = request.form["cust_no"]
+        date = request.form["date"]
+
+        error = None
+
+        if not cust_no:
+            error = "Customer Number is required!"
+        if not date:
+            error = "Date is required!"
+        #elif date.isdate() == False:
+        #    error = "Price must be a number!"
 
 
+        if error is not None:
+            flash(error)
+        else:
+            try:
+                with pool.connection() as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO orders (order_no, cust_no, date)
+                            SELECT COALESCE(MAX(order_no), 0) + 1, %(cust_no)s, %(date)s FROM orders;
+                            """,
+                            {"cust_no": cust_no, "date": date},
+                        )
+                    conn.commit()
+                return redirect(url_for("order_index"))
+            except psycopg.DatabaseError as error:
+                error_message = str(error)
+                if re.search(r'Key \(cust_no\)=\(\d+\) is not present in table "customer"', error_message):
+                    error = "Customer does not exist!"
+                    flash(error)
+                else:
+                    # Handle other database errors
+                    flash(error)
+                    error = "An error occurred while creating the order."
+                    flash(error)
 
 
-
-
-
-
+    return render_template("order/create.html")
 
 
 
