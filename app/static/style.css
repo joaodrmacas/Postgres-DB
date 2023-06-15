@@ -37,31 +37,44 @@ nav {
   padding: 0 0.5rem;
 }
 
-nav h1 {
-  flex: auto;
-  margin: 0;
-}
-
-nav h1 a {
-  text-decoration: none;
-  padding: 0.25rem 0.5rem;
-}
-
-nav ul {
+/* Rest of the CSS styles */
+nav {
+  background-color: #f8f8f8;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   display: flex;
-  list-style: none;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 a {
+  color: #333;
+  text-decoration: none;
+  font-size: 30px;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+ul {
+  list-style-type: none;
   margin: 0;
   padding: 0;
 }
 
-nav ul li a,
-nav ul li span,
-header .action {
-  display: block;
-  padding: 0.5rem;
-  color: lightgray;
-  background-color: #4CAF50;
-  border-radius: 5px;
+li {
+  display: inline-block;
+  margin-right: 10px;
+}
+
+li a {
+  color: #333;
+  text-decoration: none;
+  font-size: 16px;
+  transition: color 0.3s ease;
+}
+
+li a:hover {
+  color: #4CAF50;
 }
 
 .content {
@@ -147,4 +160,121 @@ input.danger {
 input[type=submit] {
   align-self: start;
   min-width: 10em;
+}
+
+/* Button styles */
+.search-form {
+  display: flex;
+  align-items: left;
+  margin-bottom: 20px;
+}
+
+.search-input {
+  width: 200px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+
+}
+
+.search-reset {
+  padding: 4px 4px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  width: 80px;
+  /* Adjust the width to your desired size */
+
+}
+
+.search-submit {
+  padding: 8px 12px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.search-submit:hover {
+  background-color: #45a049;
+}
+
+.search-submit:focus {
+  outline: none;
+}
+
+.search-submit:active {
+  background-color: #3e8942;
+}
+
+a.action {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: transparent;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+}
+
+a.action:hover {
+  color: #4CAF50;
+}
+
+a.action:focus {
+  outline: none;
+}
+
+a.action:active {
+  background-color: transparent;
+}
+
+.post {
+  margin-bottom: 20px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
+}
+
+.post header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.post header h1 {
+  font-size: 24px;
+  margin-bottom: 5px;
+}
+
+.post .about {
+  font-style: italic;
+  color: #777;
+}
+
+.post .body {
+  margin-top: 10px;
+}
+
+.action {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid lightgray;
+  margin: 20px 0;
 }

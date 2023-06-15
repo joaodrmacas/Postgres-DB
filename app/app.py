@@ -378,14 +378,13 @@ def product_delete(product_sku):
 @app.route("/supplier/<int:page_number>", methods=("GET","POST,"))
 def supplier_index(page_number=1):
     error  = None
-
     query = request.args.get('query')
-    error = query
+    isSearch= False
     if error is not None:
             flash(error)
     limit = 5  # Set the limit to the desired number of items per page
     offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
-    if not query:
+    if not query or query==" ":
         with pool.connection() as conn:
             with conn.cursor(row_factory=namedtuple_row) as cur:
                 supliers = cur.execute(
@@ -398,10 +397,11 @@ def supplier_index(page_number=1):
                     (limit, offset),
                 ).fetchall()
                 log.debug(f"Found {cur.rowcount} rows.")
-    else: 
+    else:
+        isSearch=True
         with pool.connection() as conn:
             with conn.cursor(row_factory=namedtuple_row) as cur:
-                supliers = cur.execute("SELECT sku, address, name, tin,date FROM supplier WHERE name LIKE %s OR tin LIKE %s",  ('%' + query + '%', '%' + query + '%')
+                supliers = cur.execute("SELECT sku, address, name, tin,date FROM supplier WHERE LOWER(name) LIKE LOWER(%s) OR tin LIKE %s",  ('%' + query + '%', '%' + query + '%')
                 ).fetchall()
                 log.debug(f"Found {cur.rowcount} rows.")
 
@@ -411,7 +411,8 @@ def supplier_index(page_number=1):
         and not request.accept_mimetypes["text/html"]
     ):
         return jsonify(supliers)
-    return render_template("supply/index.html",supliers=supliers,page_number=page_number)
+    numberSearch = len(supliers)
+    return render_template("supply/index.html",supliers=supliers,page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
 
 
 @app.route("/supplier/<supplier_name>/update", methods=("GET",))

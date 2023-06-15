@@ -9,14 +9,19 @@
     <li><a href="{{ url_for('supplier_index') }}">Suppliers</a>
     <li><a href="{{ url_for('client_index') }}">Clients</a>
     <li><a href="{{ url_for('order_index') }}">Orders</a>
-    </ul>
-  </nav>
-  <section class="content">
-    <header>
-      {% block header %}{% endblock %}
-    </header>
-    {% for message in get_flashed_messages() %}
-      <div class="flash">{{ message }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
-  </section>
+  </ul>
+</nav>
+<section class="content">
+  <header>
+    {% block header %}{% endblock %}
+  </header>
+  {% for message in get_flashed_messages() %}
+  <div class="flash">{{ message }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</section>
+<footer>
+  <p>
+    Projeto BD 2022/2023 Grupo: </p>
+</footer>
+<p></p>

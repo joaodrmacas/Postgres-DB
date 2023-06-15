@@ -8,10 +8,6 @@
 {% block header %}
 <p>
 <h1>{% block title %}Supliers{% endblock %}</h1>
-<form action="{{ url_for('supplier_index') }}" method="GET">
-  <input type="text" name="query" placeholder="Enter your search query">
-  <input type="submit" value="Search">
-</form>
 </p>
 <p>
   <a class="action" href="{{ url_for('supplier_register') }}">Create new Supplier</a>
@@ -22,6 +18,25 @@
 
 
 {% block content %}
+<form action="{{ url_for('supplier_index') }}" method="GET" class="search-form">
+
+  {% if isSearch %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder={{ query }}>
+    <button type="submit" class="search-submit">Search</button>
+  </div>
+  <div>
+    <button type="submit" href="/supplier" class="search-reset">reset</button>
+    <h3>Search Result {{ numberSearch }}</h3>
+  </div>
+  {% else %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder="type here">
+    <button type="submit" class="search-submit">Search</button>
+  </div>
+  {% endif %}
+</form>
+
 {% for suplier in supliers %}
 <article class="post">
   <header>
@@ -39,6 +54,7 @@
 {% endif %}
 
 {% endfor %}
+{% if not isSearch %}
 <div class="button-container">
   {% if page_number > 1 %}
   <a href="/supplier/{{page_number-1}}" class="navigation-button">&lt;</a>
@@ -49,11 +65,8 @@
   {% endif %}
   <!-- Add more navigation buttons as needed -->
 </div>
+{% endif %}
 
 
-<footer>
-  <p>
-    Projeto BD 2022/2023 Grupo: </p>
-</footer>
-<p></p>
+
 {% endblock %}
