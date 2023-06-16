@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>{% block title %}Supplier {{ supplier['name'] }} | Edit{% endblock %}</h1>
+<h1>{% block title %}Supplier {{ supplier['tin'] }} | Edit{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
@@ -17,7 +17,7 @@
   <input name="date" id="date" placeholder="none" value="{{ request.form['supplier_tin'] or supplier['date'] }}"
     disabled>
   <label for="address">Address</label>
-  <input name="addressS" id="address" type="text" placeholder="R. Julio de Matos"
+  <input name="addressS" id="address" type="text" placeholder="none"
     value="{{ request.form['supplier_tin'] or supplier['address'] }}" disabled>
 </form>
 <hr>

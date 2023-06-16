@@ -10,17 +10,25 @@
 
 {% block content %}
 {% for client in clients %}
-<article class="post">
-  <header>
-    <div>
-      <h1>{{ client['cust_no'] }} - {{ client['name'] }}</h1>
-      <div class="about">in {{ client['address'] }}</div>
-    </div>
+
+<div class="post_w_settings">
+  <article class = "post">
+    <header>
+      <div>
+        <h1>{{ client['cust_no'] }} - {{ client['name'] }}</h1>
+        <div class="about">in {{ client['address'] }}</div>
+      </div>
+    </header>
+    <p class="body">☏ {{ client['phone'] }}</p>
+  </article>
+  <div class="post_settings">
     <a class="action" href="{{ url_for('client_update', client_number=client['cust_no']) }}">Edit</a>
-  </header>
-  <p class="body">☏ {{ client['phone'] }}</p>
-</article>
-{% if not loop.last %}
+    <form action="{{ url_for('client_delete', client_number=client['cust_no']) }}" method="post">
+      <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    </form>
+  </div class="post_settings">
+</div>
+  {% if not loop.last %}
 <hr>
 {% endif %}
 {% endfor %}

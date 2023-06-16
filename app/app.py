@@ -3,6 +3,7 @@ import os
 from logging.config import dictConfig
 
 import psycopg
+import json
 from flask import flash
 from flask import Flask
 from flask import jsonify
@@ -150,11 +151,11 @@ def client_create():
                     cur.execute(
                         """
                         INSERT INTO customer (cust_no, name, address, phone, email)
-                        VALUES (%(cust_no)s, %(name)s, %(address)s, %(phone)s, %(email)s);
+                        SELECT COALESCE(MAX(cust_no), 0) + 1, %(name)s, %(address)s, %(phone)s, %(email)s FROM customer;
                         """,
-                        {"cust_no": 15, "name": name, "address": address, "phone": phone, "email": email},
+                        {"name": name, "address": address, "phone": phone, "email": email},
                     )
-                #conn.commit()
+                conn.commit()
             return redirect(url_for("client_index"))
         
     return render_template("client/create_client.html")
@@ -415,12 +416,11 @@ def supplier_index(page_number=1):
     return render_template("supply/index.html",supliers=supliers,page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
 
 
-@app.route("/supplier/<supplier_name>/update", methods=("GET",))
-@app.route("/supplier/defau/update", methods=("GET",))
-def supplier_update(supplier_name=""):
+@app.route("/supplier/<tin>/update", methods=("GET",))
+def supplier_update(tin=""):
     """View, or delete, or create an account."""
     
-    if supplier_name == "":
+    if tin == "":
         return render_template("supply/index.html")
     
     with pool.connection() as conn:
@@ -429,9 +429,9 @@ def supplier_update(supplier_name=""):
                 """
                 SELECT name, address, sku, tin,date
                 FROM supplier
-                WHERE name = %(supplier_name)s;
+                WHERE tin = %(tin)s;
                 """,
-                {"supplier_name": supplier_name},
+                {"tin": tin},
             ).fetchone()
             log.debug(f"Found {cur.rowcount} rows.")
 
@@ -490,43 +490,40 @@ def supplier_register():
         else:
             address = None
 
-        if not name:
-            error = "Name is required!"
-        if not sku:
-            error = "sku is required!"
-        if tin.isnumeric() == False:
-            error = "Tin must be a number!"
-        
-
+        if name == "":
+            name = None
+        if sku == "":
+            sku = None
+        if date == "":
+            date = None
         
 
         if error is not None:
             flash(error)
         else:
-            with pool.connection() as conn:
-                with conn.cursor(row_factory=namedtuple_row) as cur:
-                    cur.execute(
-                        """
-                        INSERT INTO supplier (sku, address, name, tin, date)
-                        VALUES (%(sku)s, %(address)s, %(name)s, %(tin)s, %(date)s);
-                        """,
-                        {"sku": sku, "name": name, "address": address, "tin": tin, "date": date},
-                    )
-                conn.commit()
-            return redirect(url_for("supplier_index"))
-    
+            try:
+                with pool.connection() as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cur:
+                        cur.execute(
+                            """
+                            INSERT INTO supplier (sku, address, name, tin, date)
+                            VALUES (%(sku)s, %(address)s, %(name)s, %(tin)s, %(date)s);
+                            """,
+                            {"sku": sku, "name": name, "address": address, "tin": tin, "date": date},
+                        )
+                    conn.commit()
+                return redirect(url_for("supplier_index"))
+            except psycopg.DatabaseError as error:
+                error_message = str(error)
+                if re.search(r'Key \(sku\)=\(\d+\) is not present in table "product"', error_message):
+                        error = "SKU does not exist!"
+                        flash(error)
+                        error=""
+                elif re.search(r'Key \(tin\)=\(\d+\) already exists', error_message):
+                        error = "Tin already exists!"
+                        flash(error)
+                        error=""
     return render_template("supply/registerSuplier.html")
-
-
-
-
-
-
-
-
-
-
-
 
 
 @app.route("/orders", methods=("GET",))
@@ -628,30 +625,47 @@ def order_create():
     if request.method == "POST":
         cust_no = request.form["cust_no"]
         date = request.form["date"]
-
+        skus = request.form['selected_products'] 
+        skus_data = json.loads(skus)
+        
         error = None
 
+        #flash(skus)
+        if len(skus_data) == 0:
+            error = ('Order is empty')
         if not cust_no:
             error = "Customer Number is required!"
         if not date:
             error = "Date is required!"
-        #elif date.isdate() == False:
-        #    error = "Price must be a number!"
-
-
         if error is not None:
             flash(error)
         else:
             try:
                 with pool.connection() as conn:
                     with conn.cursor(row_factory=namedtuple_row) as cur:
+                        order_n = cur.execute("""SELECT COALESCE(MAX(order_no),0)+1 FROM orders""").fetchone()
                         cur.execute(
                             """
                             INSERT INTO orders (order_no, cust_no, date)
-                            SELECT COALESCE(MAX(order_no), 0) + 1, %(cust_no)s, %(date)s FROM orders;
+                            VALUES (%(order_n)s, %(cust_no)s, %(date)s);
                             """,
-                            {"cust_no": cust_no, "date": date},
+                            {"order_n":order_n[0],"cust_no": cust_no, "date": date},
                         )
+                        
+                        for key in skus_data.keys():
+                            cur.execute("SELECT sku FROM product WHERE sku = %s", (key,))
+                            if cur.rowcount == 0:
+                                error = 'There is no product with the following sku: ' + key + '.'
+                                conn.rollback()
+                                flash(error)
+                                return render_template("order/create.html")
+                            cur.execute(
+                                """
+                                INSERT INTO contains (order_no,SKU,qty)
+                                VALUES (%(order_n)s, %(sku)s, %(qt)s)
+                                """,
+                                {"order_n":order_n[0],"sku":key,"qt":skus_data[key]},
+                            )
                     conn.commit()
                 return redirect(url_for("order_index"))
             except psycopg.DatabaseError as error:

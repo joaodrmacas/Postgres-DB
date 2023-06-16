@@ -1,7 +1,13 @@
+
+
+
+
 /* Style for the post container */
 .post {
     margin-bottom: 20px;
 }
+
+
 
 /* Style for the header section */
 header {
@@ -54,4 +60,14 @@ hr {
 /* Style for the page indicator */
 .page-indicator {
     margin: 0 10px;
+}
+
+
+.action-container {
+display: flex;
+justify-content: flex-end;
+}
+
+.action-container > div {
+margin-left: 10px;
 }

@@ -2,37 +2,33 @@
 
 /* Style for the button container */
 .button-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-  }
-  
-  /* Style for the navigation buttons */
-  .button-container .navigation-button {
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 0 10px;
-    cursor: pointer;
-    transition-duration: 0.15s;
-  }
-  
-  /* Style for the active navigation button */
-  .button-container .navigation-button.page-indicator {
-    background-color: #555;
-    cursor: initial;
-  }
-  .button-container .navigation-button.page-indicator:hover {
-    background-color: #555;
-  }
-  
-  /* Hover effect for navigation buttons */
-  .button-container .navigation-button:hover {
-    background-color: #45a049;
-  }
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
 
+/* Style for the navigation buttons */
+.navigation-button {
+  background-color: #4c7aaf;
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 0 10px;
+  cursor: pointer;
+  transition-duration: 0.15s;
+}
+
+/* Style for the active navigation button */
+.navigation-button.page-indicator {
+  background-color: #cecece;
+  cursor: initial;
+}
+
+/* Hover effect for navigation buttons */
+.navigation-button:not(.page-indicator):hover {
+  background-color: #3e6b9f;
+}

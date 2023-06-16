@@ -217,7 +217,7 @@ a.action {
   display: inline-block;
   padding: 10px 20px;
   background-color: transparent;
-  color: #fff;
+  color: #000000;
   text-decoration: none;
   border-radius: 4px;
 }
@@ -237,10 +237,33 @@ a.action:active {
 .post {
   margin-bottom: 20px;
   padding: 10px;
+  /*border: 1px solid #ccc;*/
+  border-radius: 4px;
+  background-color: #f8f8f8;
+  display: flex;
+  flex-direction: column;
+}
+.post_w_settings {
+  margin-bottom: 20px;
+  padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   background-color: #f8f8f8;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
+
+
+.post_settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+}
+
+
 
 .post header {
   display: flex;

@@ -5,15 +5,88 @@
 {% endblock %}
 
 {% block content %}
-  <form method="post">
+  <form method="post" id="order-form">
     <label for="cust_no">Customer Number</label>
     <input name="cust_no" id="cust_no" type="text" required>
-    <label for="date">date</label>
+    <label for="date">Date</label>
     <input name="date" id="date" type="date" required>
+
+    <div id="product-inputs">
+      <label for="product-sku">Product SKU</label>
+      <input name="product-sku" id="product-sku" type="text">
+      <label for="product-quantity">Quantity</label>
+      <input name="product-quantity" id="product-quantity" type="number">
+      <button type="button" id="add-product-btn">Add Product</button>
+    </div>
+    <div id="product-quantity">
+    </div>
+
+    <ul id="selected-products">
+      <!-- Selected products will be dynamically added here -->
+    </ul>
+
     <input type="submit" value="Create">
   </form>
   <hr>
   <form action="{{ url_for('order_index')}}" method="get">
     <input class="danger" type="submit" value="Cancel" onclick="return confirm('Are you sure?');">
   </form>
+
+  <script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const productInput = document.getElementById('product-sku');
+      const productQuantity = document.getElementById('product-quantity');
+      const addProductBtn = document.getElementById('add-product-btn');
+      const selectedProductsList = document.getElementById('selected-products');
+      const orderForm = document.getElementById('order-form');
+
+      addProductBtn.addEventListener('click', function() {
+        const sku = productInput.value.trim();
+        let quantity = productQuantity.value.trim();
+        if (quantity === '') {
+          quantity = '1';  // Set quantity to 1 if not entered by the user
+        }
+        if (sku !== '') {
+          const existingItem = Array.from(selectedProductsList.children).find(item => {
+          const itemSku = item.textContent.split(' (x')[0]; // Extract the SKU from the item's text
+          return itemSku === sku;
+          });
+          if (existingItem) {
+            const existingQuantity = parseInt(existingItem.textContent.match(/x (\d+)/)[1]);
+            const newQuantity = existingQuantity + parseInt(quantity);
+            existingItem.textContent = sku + ' (x ' + newQuantity + ')';
+          } else {
+            const listItem = document.createElement('li');
+            listItem.textContent = sku + ' (x ' + quantity + ')';
+            selectedProductsList.appendChild(listItem);
+          }
+          productInput.value = '';
+          productQuantity.value = '';
+        }
+      });
+
+      orderForm.addEventListener('submit', function(event) {
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'selected_products';
+        const selectedProducts = Array.from(selectedProductsList.children).map(item => item.textContent);
+
+        var json = {};
+
+        selectedProducts.forEach(function(item) {
+          var parts = item.split(' (x');
+          var key = parts[0];
+          var value = parseInt(parts[1]);
+
+          json[key] = value;
+        });
+
+        json = JSON.stringify(json)
+        hiddenInput.value = json
+
+        orderForm.appendChild(hiddenInput);
+      });
+    });
+  </script>
 {% endblock %}

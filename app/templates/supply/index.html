@@ -38,17 +38,26 @@
 </form>
 
 {% for suplier in supliers %}
-<article class="post">
-  <header>
-    <div>
-      <h1>{{suplier['name']}}</h1>
-      <div class="about"> address:"{{ suplier['address'] }}" TIN:{{ suplier['tin'] }}</div>
-    </div>
-    <a class="action" href="{{url_for('supplier_update',supplier_name = suplier['name'])}}">Edit</a>
+<div class="post_w_settings">
+  <article class="post">
+    <header>
+      <div>
+        <h1>Supplier {{suplier['tin']}}</h1>
+        <div class="about"> address:"{{ suplier['address'] }}" Name:{{ suplier['name'] }}</div>
+      </div>
+    </header>
+    <p class="body"> Product => {{ suplier['sku'] }}</p>
+  </article>
+  <div class="post_settings">
+    <a class="action" href="{{url_for('supplier_update',tin = suplier['tin'])}}">Edit</a>
+    <form action="{{url_for('supplier_delete',tin = suplier['tin'])}}" method="post">
+      <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    </form>
+  </div class="post_settings">
+</div>
 
-  </header>
-  <p class="body"> Product => {{ suplier['sku'] }}</p>
-</article>
+
+
 {% if not loop.last %}
 <hr>
 {% endif %}
