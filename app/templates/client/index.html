@@ -9,10 +9,28 @@
 {% endblock %}
 
 {% block content %}
+<form action="{{ url_for('client_index') }}" method="GET" class="search-form">
+
+  {% if isSearch %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder={{ query }}>
+    <button type="submit" class="search-submit">Search</button>
+  </div>
+  <div>
+    <button type="submit" href="/client" class="search-reset">reset</button>
+    <h3>Search Result {{ numberSearch }}</h3>
+  </div>
+  {% else %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder="type here">
+    <button type="submit" class="search-submit">Search</button>
+  </div>
+  {% endif %}
+</form>
 {% for client in clients %}
 
 <div class="post_w_settings">
-  <article class = "post">
+  <article class="post">
     <header>
       <div>
         <h1>{{ client['cust_no'] }} - {{ client['name'] }}</h1>
@@ -28,10 +46,11 @@
     </form>
   </div class="post_settings">
 </div>
-  {% if not loop.last %}
+{% if not loop.last %}
 <hr>
 {% endif %}
 {% endfor %}
+{% if not isSearch %}
 <div class="button-container">
   {% if page_number > 1 %}
   <a href="/clients/{{page_number-1}}" class="navigation-button">&lt;</a>
@@ -42,4 +61,5 @@
   {% endif %}
   <!-- Add more navigation buttons as needed -->
 </div>
+{% endif %}
 {% endblock %}

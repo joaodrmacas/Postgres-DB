@@ -1,41 +1,61 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Orders{% endblock %}</h1>
-  <a class="action" href="{{ url_for('order_create') }}">Create new Order</a>
+<h1>{% block title %}Orders{% endblock %}</h1>
+<a class="action" href="{{ url_for('order_create') }}">Create new Order</a>
 {% endblock %}
 
 {% block content %}
-  {% for order in orders %}
-    <article class="post">
-      <header>
-        <div>
-          <h1>{{ order['order_no'] }}</h1>
-          <a class="about" href="{{ url_for('client_update', client_number=order['cust_no']) }}">
-            made by customer: {{ order['cust_no'] }}
-          </a>
-        </div>
-        {% if order['is_paid'] %}
-        <a class="action">Paid</a>
-        {% else %}
-        <a class="action" href="{{ url_for('order_pay', order_no=order['order_no']) }}">Pay</a>
-        {% endif %}
-      </header>
-      <p class="body">data: {{ order['date'] }}</p>
-    </article>
-    
-    {% if not loop.last %}
-      <hr>
-    {% endif %}
-  {% endfor %}
-  <div class="button-container">
-    {% if page_number > 1 %}  
-      <a href="/orders/{{page_number-1}}" class="navigation-button">&lt;</a>
-    {% endif %}
-    <p class="navigation-button page-indicator">Page {{page_number}}</p>
-    {% if orders %}  
-      <a href="/orders/{{page_number+1}}" class="navigation-button">&gt;</a>
-    {% endif %}
-    <!-- Add more navigation buttons as needed -->
+<form action="{{ url_for('order_index') }}" method="GET" class="search-form">
+
+  {% if isSearch %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder={{ query }}>
+    <button type="submit" class="search-submit">Search</button>
   </div>
+  <div>
+    <button type="submit" href="/order" class="search-reset">reset</button>
+    <h3>Search Result {{ numberSearch }}</h3>
+  </div>
+  {% else %}
+  <div>
+    <input type="text" name="query" class="search-input" placeholder="type here">
+    <button type="submit" class="search-submit">Search</button>
+  </div>
+  {% endif %}
+</form>
+{% for order in orders %}
+<article class="post">
+  <header>
+    <div>
+      <h1>{{ order['order_no'] }}</h1>
+      <a class="about" href="{{ url_for('client_update', client_number=order['cust_no']) }}">
+        made by customer: {{ order['cust_no'] }}
+      </a>
+    </div>
+    {% if order['is_paid'] %}
+    <a class="action">Paid</a>
+    {% else %}
+    <a class="action" href="{{ url_for('order_pay', order_no=order['order_no']) }}">Pay</a>
+    {% endif %}
+  </header>
+  <p class="body">data: {{ order['date'] }}</p>
+</article>
+
+{% if not loop.last %}
+<hr>
+{% endif %}
+{% endfor %}
+{% if not isSearch %}
+<div class="button-container">
+  {% if page_number > 1 %}
+  <a href="/orders/{{page_number-1}}" class="navigation-button">&lt;</a>
+  {% endif %}
+  <p class="navigation-button page-indicator">Page {{page_number}}</p>
+  {% if orders %}
+  <a href="/orders/{{page_number+1}}" class="navigation-button">&gt;</a>
+  {% endif %}
+  <!-- Add more navigation buttons as needed -->
+</div>
+{% endif %}
 {% endblock %}
