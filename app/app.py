@@ -18,12 +18,13 @@ import re
 
 
 # postgres://{user}:{password}@{hostname}:{port}/{database-name}
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
-#DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://db:db@postgres/db")
+#DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://db:db@postgres/db")
 
 
 pool = ConnectionPool(conninfo=DATABASE_URL)
 # the pool starts connecting immediately.
+
 
 dictConfig(
     {
@@ -58,20 +59,31 @@ def client_index(page_number=1):
     if page_number < 1:
         return redirect("/clients/1")
 
+    query = request.args.get('query')
+    isSearch=False
     limit = 5  # Set the limit to the desired number of items per page
     offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
-    with pool.connection() as conn:
-        with conn.cursor(row_factory=namedtuple_row) as cur:
-            clients = cur.execute(
-                """
-                SELECT cust_no, name, address, phone
-                FROM customer
-                ORDER BY cust_no
-                LIMIT %s OFFSET %s;
-                """,
-                (limit, offset),
-            ).fetchall()
-            log.debug(f"Found {cur.rowcount} rows.")
+     
+    if not query: 
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                clients = cur.execute(
+                    """
+                    SELECT cust_no, name, address, phone
+                    FROM customer
+                    ORDER BY cust_no
+                    LIMIT %s OFFSET %s;
+                    """,
+                    (limit, offset),
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+    else: 
+        isSearch=True
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                clients = cur.execute("SELECT cust_no, name, address, phone FROM customer WHERE LOWER(name) LIKE LOWER(%s) OR phone LIKE %s OR cust_no::text LIKE %s",  ('%' + query + '%', '%' + query + '%', '%' + query + '%')
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
 
     # API-like response is returned to clients that request JSON explicitly (e.g., fetch)
     if (
@@ -79,9 +91,8 @@ def client_index(page_number=1):
         and not request.accept_mimetypes["text/html"]
     ):
         return jsonify(clients)
-
-    return render_template("client/index.html", clients=clients, page_number=page_number)
-
+    numberSearch = len(clients)
+    return render_template("client/index.html", clients=clients, page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
 
 @app.route("/clients/<client_number>/update", methods=("GET",))
 def client_update(client_number=-1):
@@ -105,12 +116,9 @@ def client_update(client_number=-1):
 
     return render_template("client/update.html", client=client)
 
-
 @app.route("/clients/create_client", methods=("GET","POST"))
 def client_create():
     """Create a new account."""
-
-
 
     if request.method == "POST":
         name = request.form["name"]
@@ -145,22 +153,27 @@ def client_create():
         if error is not None:
             flash(error)
         else:
-            with pool.connection() as conn:
-                with conn.cursor(row_factory=namedtuple_row) as cur:
-                    conn.autocommit = False
-                    cur.execute(
-                        """
-                        INSERT INTO customer (cust_no, name, address, phone, email)
-                        SELECT COALESCE(MAX(cust_no), 0) + 1, %(name)s, %(address)s, %(phone)s, %(email)s FROM customer;
-                        """,
-                        {"name": name, "address": address, "phone": phone, "email": email},
-                    )
-                conn.commit()
-            return redirect(url_for("client_index"))
-        
+            try:
+                with pool.connection() as conn:
+                    with conn.cursor(row_factory=namedtuple_row) as cur:
+                        conn.autocommit = False
+                        cur.execute(
+                            """
+                            INSERT INTO customer (cust_no, name, address, phone, email)
+                            SELECT COALESCE(MAX(cust_no), 0) + 1, %(name)s, %(address)s, %(phone)s, %(email)s FROM customer;
+                            """,
+                            {"name": name, "address": address, "phone": phone, "email": email},
+                        )
+                    conn.commit()
+                return redirect(url_for("client_index"))
+            except psycopg.DatabaseError as error:
+                error_message = str(error)
+                if re.search(r'Key \(email\)=\((.*?)\) already exists', error_message):
+                    email = re.search(r'Key \(email\)=\((.*?)\) already exists', error_message).group(1)
+                    error = f"Email '{email}' is already in use!"
+                    flash(error)
+
     return render_template("client/create_client.html")
-
-
 
 @app.route("/accounts/<client_number>/delete", methods=("POST",))
 def client_delete(client_number):
@@ -210,30 +223,39 @@ def product_index(page_number=1):
 
     if page_number < 1:
         return redirect("/products/1")
-
+    query = request.args.get('query')
+    isSearch= False
     limit = 5  # Set the limit to the desired number of items per page
     offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
-    with pool.connection() as conn:
-        with conn.cursor(row_factory=namedtuple_row) as cur:
-            products = cur.execute(
-                """
-                SELECT SKU, name, description, price, ean
-                FROM product
-                ORDER BY name
-                LIMIT %s OFFSET %s;
-                """,
-                (limit, offset),
-            ).fetchall()
-            log.debug(f"Found {cur.rowcount} rows.")
-
+    if not query or query == " ":
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                products = cur.execute(
+                    """
+                    SELECT SKU, name, description, price, ean
+                    FROM product
+                    ORDER BY name
+                    LIMIT %s OFFSET %s;
+                    """,
+                    (limit, offset),
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+    else:
+        isSearch=True
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                products = cur.execute("SELECT sku, name, description, price, ean FROM product WHERE LOWER(name) LIKE LOWER(%s) OR price::text LIKE %s OR LOWER(sku) LIKE LOWER(%s) OR ean::text LIKE %s",  ('%' + query + '%', '%' + query + '%', '%' + query + '%','%' + query + '%')
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+                
     # API-like response is returned to clients that request JSON explicitly (e.g., fetch)
     if (
         request.accept_mimetypes["application/json"]
         and not request.accept_mimetypes["text/html"]
     ):
         return jsonify(products)
-
-    return render_template("product/index.html", products=products, page_number=page_number)
+    numberSearch = len(products)
+    return render_template("product/index.html", products=products, page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
 
 
 @app.route("/product/<string:product_sku>/update",methods =("GET", "POST"))
@@ -280,8 +302,6 @@ def product_update(product_sku):
 
     return render_template("product/update.html", product=product)
 
-
-
 @app.route("/product/create_product", methods=("GET","POST"))
 def product_create():
     """Create a new product."""
@@ -296,14 +316,17 @@ def product_create():
 
         error = None
 
+        if ean == "":
+            ean = None
+
         if not name:
             error = "Name is required!"
         if not price:
             error = "Price is required!"
-        elif price.isnumeric() == False:
-            error = "Price must be a number!"
-        if not ean:
-            error = "EAN is required!"
+        try:
+            price = float(price)
+        except:
+            error = "Price must be a float"
         if not sku:
             error = "SKU is required!"
         if not description:
@@ -342,8 +365,6 @@ def product_create():
 
     return render_template("product/create_product.html")
 
-
-
 @app.route("/product/<string:product_sku>/delete",methods =("POST",))
 def product_delete(product_sku):
     sk = product_sku
@@ -369,11 +390,6 @@ def product_delete(product_sku):
         conn.commit()
     
     return redirect(url_for("product_index"))
-
-
-
-
-
 
 @app.route("/supplier", methods=("GET","POST",))
 @app.route("/supplier/<int:page_number>", methods=("GET","POST,"))
@@ -402,7 +418,7 @@ def supplier_index(page_number=1):
         isSearch=True
         with pool.connection() as conn:
             with conn.cursor(row_factory=namedtuple_row) as cur:
-                supliers = cur.execute("SELECT sku, address, name, tin,date FROM supplier WHERE LOWER(name) LIKE LOWER(%s) OR tin LIKE %s",  ('%' + query + '%', '%' + query + '%')
+                supliers = cur.execute("SELECT sku, address, name, tin,date FROM supplier WHERE LOWER(name) LIKE LOWER(%s) OR tin LIKE %s OR LOWER(sku) LIKE LOWER(%s)",  ('%' + query + '%', '%' + query + '%', '%' + query + '%')
                 ).fetchall()
                 log.debug(f"Found {cur.rowcount} rows.")
 
@@ -414,7 +430,6 @@ def supplier_index(page_number=1):
         return jsonify(supliers)
     numberSearch = len(supliers)
     return render_template("supply/index.html",supliers=supliers,page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
-
 
 @app.route("/supplier/<tin>/update", methods=("GET",))
 def supplier_update(tin=""):
@@ -436,8 +451,6 @@ def supplier_update(tin=""):
             log.debug(f"Found {cur.rowcount} rows.")
 
     return render_template("supply/update.html", supplier=supplier)
-
-
 
 @app.route("/supplier/<tin>/delete", methods=("POST",))
 def supplier_delete(tin=""):
@@ -463,7 +476,6 @@ def supplier_delete(tin=""):
             )
         conn.commit()
     return redirect(url_for("supplier_index"))
-
 
 @app.route("/supplier/register", methods=("GET","POST"))
 def supplier_register():
@@ -525,27 +537,36 @@ def supplier_register():
                         error=""
     return render_template("supply/registerSuplier.html")
 
-
 @app.route("/orders", methods=("GET",))
 @app.route("/orders/<int:page_number>", methods=("GET",))
 def order_index(page_number=1):
     
     limit = 5  # Set the limit to the desired number of items per page
     offset = (page_number - 1) * limit  # Calculate the offset based on the current page number
-    with pool.connection() as conn:
-        with conn.cursor(row_factory=namedtuple_row) as cur:
-            orders = cur.execute(
-                """
-                SELECT o.order_no, o.cust_no, o.date, p.order_no AS payment_order_no
-                FROM orders o
-                LEFT JOIN pay p ON o.order_no = p.order_no
-                ORDER BY o.order_no
-                LIMIT %s OFFSET %s;
-                """,
-                (limit, offset),
-            ).fetchall()
-            log.debug(f"Found {cur.rowcount} rows.")
-
+    query = request.args.get('query')
+    isSearch= False
+    if not query or query==" ":
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                orders = cur.execute(
+                    """
+                    SELECT o.order_no, o.cust_no, o.date, p.order_no AS payment_order_no
+                    FROM orders o
+                    LEFT JOIN pay p ON o.order_no = p.order_no
+                    ORDER BY o.order_no
+                    LIMIT %s OFFSET %s;
+                    """,
+                    (limit, offset),
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+    else:
+        isSearch=True
+        with pool.connection() as conn:
+            with conn.cursor(row_factory=namedtuple_row) as cur:
+                orders = cur.execute("SELECT o.order_no, o.cust_no, o.date, p.order_no AS payment_order_no FROM orders o LEFT JOIN pay p ON o.order_no = p.order_no WHERE p.order_no::text LIKE %s OR o.cust_no::text LIKE %s OR o.order_no::text LIKE %s OR o.date::text LIKE %s",  ('%' + query + '%', '%' + query + '%', '%' + query + '%','%' + query + '%')
+                ).fetchall()
+                log.debug(f"Found {cur.rowcount} rows.")
+           
     # Create a list to store the orders with payment status (paid/not paid)
     modified_orders = []
     
@@ -567,9 +588,8 @@ def order_index(page_number=1):
         and not request.accept_mimetypes["text/html"]
     ):
         return jsonify(modified_orders)
-    
-    return render_template("order/index.html", orders=modified_orders, page_number=page_number)
-
+    numberSearch = len(orders)
+    return render_template("order/index.html", orders=modified_orders, page_number=page_number,isSearch=isSearch,query=query,numberSearch=numberSearch)
 
 @app.route("/orders/<order_no>/pay", methods=("GET","POST"))
 def order_pay(order_no):
@@ -614,8 +634,6 @@ def order_pay(order_no):
             return redirect(url_for("order_index"))
 
     return render_template("order/pay.html", order_no=order_no)
-
-
 
 @app.route("/order/create_order", methods=("GET","POST"))
 def order_create():
@@ -682,19 +700,10 @@ def order_create():
 
     return render_template("order/create.html")
 
-
-
-
-
-
-
-
-
 @app.route("/ping", methods=("GET",))
 def ping():
     log.debug("ping!")
     return jsonify({"message": "pong!", "status": "success"})
-
 
 if __name__ == "__main__":
     app.run()
