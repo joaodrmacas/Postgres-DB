@@ -38,7 +38,7 @@
   <div class="post_settings">
     <a class="action" href="{{ url_for('product_update', product_sku=product['sku']) }}">Edit</a>
     <form action="{{ url_for('product_delete', product_sku=product['sku']) }}" method="post">
-      <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+      <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?\nYou will also delete:\nAll orders that contain this product\nThe supplier of the product');">
     </form>
   </div class="post_settings">
 </div>

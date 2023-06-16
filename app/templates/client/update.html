@@ -19,6 +19,6 @@
   </form>
   <hr>
   <form action="{{ url_for('client_delete', client_number=client['cust_no']) }}" method="post">
-    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?\nYou will also delete:\nAll orders of the client\n');">
   </form>
 {% endblock %}  
