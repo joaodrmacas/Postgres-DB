@@ -352,8 +352,8 @@ def product_delete(product_sku):
             cur.execute("SELECT order_no FROM contains WHERE sku = %s", (sk,))
             orders = cur.fetchall()
 
-            cur.execute("DELETE FROM contains WHERE sku = %s", (sk,))
             for order in orders: 
+                cur.execute("DELETE FROM contains WHERE order_no = %s", (order[0],))
                 cur.execute("DELETE FROM pay WHERE order_no = %s", (order[0],))
                 cur.execute("DELETE FROM process WHERE order_no = %s", (order[0],))
                 cur.execute("DELETE FROM orders WHERE order_no = %s", (order[0],))
