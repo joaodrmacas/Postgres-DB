@@ -18,8 +18,7 @@ import re
 
 
 # postgres://{user}:{password}@{hostname}:{port}/{database-name}
-#DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://db:db@postgres/db")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgres://p3:p3@postgres/p3")
 
 
 pool = ConnectionPool(conninfo=DATABASE_URL)
@@ -622,7 +621,7 @@ def order_pay(order_no):
                 if re.search(r'Key \(cust_no\)=\(\d+\) is not present in table "customer"', error_message):
                     error = "Customer does not exist!"
                     flash(error)
-                    return render_template("order/pay.html", order_no=order_no)
+                    error = ""
                 if re.search(r'Key \(order_no\)=\(\d+\) already exists', error_message):
                     error = "Order has already been paid!"
                     flash(error)
@@ -632,8 +631,33 @@ def order_pay(order_no):
                     error = "An error occurred while creating the order."
                     flash(error)
             return redirect(url_for("order_index"))
+    
+    try:
+        with pool.connection() as conn:
+            with conn.cursor() as cur:
+                cust_no = cur.execute(
+                    """
+                    SELECT cust_no FROM orders WHERE order_no = %(order_no)s;
+                    """,
+                    {"order_no": order_no},
+                ).fetchone()
+            conn.commit()
+    except psycopg.errors.DatabaseError as error:
+        #flash(str(error))
+        error_message = str(error)
+        if re.search(r'Key \(order_no\)=\(\d+\) already exists', error_message):
+            error = "Order has already been paid!"
+            flash(error)
+            error = ""
+        # Handle other database errors
+        if error:
+            error = "An error occurred while creating the order."
+            flash(error)
+        return redirect(url_for("order_index"))
 
-    return render_template("order/pay.html", order_no=order_no)
+
+
+    return render_template("order/pay.html", order_no=order_no, cust_no=cust_no[0])
 
 @app.route("/order/create_order", methods=("GET","POST"))
 def order_create():
